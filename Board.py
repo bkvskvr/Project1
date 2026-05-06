@@ -36,4 +36,10 @@ class Board:
         return True
 
     def shot(self, x, y): # вистріл опонента
-        pass
+        if self.field[y][x] == 1: # якщо там корабель - 1, то замінюємо на влучено
+            self.field[y][x] = 3
+            return True # Опонент попав отже має додатковий хід
+        elif self.field[y][x] == 0:
+            self.field[y][x] = 2
+            return False
+
