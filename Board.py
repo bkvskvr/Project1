@@ -7,6 +7,8 @@ class Board:
 
     def display(self):
         for row in self.field:
+            print(row)    def display(self):
+        for row in self.field:
             print(row)
 
     def add_ship(self, ship): #перевірка, додавання кораблів
@@ -35,11 +37,20 @@ class Board:
                             return False
         return True
 
-    def shot(self, x, y): # вистріл опонента
-        if self.field[y][x] == 1: # якщо там корабель - 1, то замінюємо на влучено
-            self.field[y][x] = 3
-            return True # Опонент попав отже має додатковий хід
-        elif self.field[y][x] == 0:
-            self.field[y][x] = 2
-            return False
+class ShotIndexError(Exception):
+    pass
 
+    def shot(self, x, y): # вистріл опонента
+        if x < 0 or x >= 10 or y < 0 or y >= 10: #Перевіряємо чи постріл в межах поля, якщо ні, то викликаємо власну помилку
+            raise ShotIndexError()
+        try:
+            if self.field[y][x] == 1:  # якщо там корабель - 1, то замінюємо на влучено
+                self.field[y][x] = 3
+                return True  # Опонент попав отже має додатковий хід
+            elif self.field[y][x] == 0:
+                self.field[y][x] = 2
+                return False
+            elif self.field[y][x] == 2 or self.field[y][x] == 3:
+                return None
+        except ShotIndexError:
+            return None
