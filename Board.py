@@ -1,3 +1,6 @@
+class ShotIndexError(Exception):
+    pass
+
 class Board:
     def __init__(self):
         self.field = [[0 for _ in range(10)] for _ in range(10)]
@@ -6,10 +9,19 @@ class Board:
         self.ships = []
 
     def display(self):
-        for row in self.field:
-            print(row)    def display(self):
-        for row in self.field:
-            print(row)
+        symbols = {
+            0: "🌊",
+            1: "🚢",
+            2: "⚪",
+            3: "💥"
+        }
+
+        for i, row in enumerate(self.field):
+            row_num = str(i)
+            row_str = f"{row_num} "
+            for cell in row:
+                row_str += symbols[cell] + " "
+            print(row_str)
 
     def add_ship(self, ship): #перевірка, додавання кораблів
         if not self.placement(ship):
@@ -37,13 +49,12 @@ class Board:
                             return False
         return True
 
-class ShotIndexError(Exception):
-    pass
 
     def shot(self, x, y): # вистріл опонента
-        if x < 0 or x >= 10 or y < 0 or y >= 10: #Перевіряємо чи постріл в межах поля, якщо ні, то викликаємо власну помилку
-            raise ShotIndexError()
         try:
+            if x < 0 or x >= 10 or y < 0 or y >= 10:  # Перевіряємо чи постріл в межах поля, якщо ні, то викликаємо власну помилку
+                raise ShotIndexError()
+
             if self.field[y][x] == 1:  # якщо там корабель - 1, то замінюємо на влучено
                 self.field[y][x] = 3
                 return True  # Опонент попав отже має додатковий хід
