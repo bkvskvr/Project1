@@ -7,6 +7,8 @@ pygame.display.set_caption("Морський бій")
 
 BLUE = (80, 134, 191)
 WHITE = (255, 255, 255)
+RED = (200, 0, 0)
+offset = 10
 
 # Налаштування поля
 cell_size = 40  # Раозмір клітинки
@@ -14,6 +16,9 @@ board_size = 10  # 10 на 10
 margin_top = 80  # зверху
 margin_left_player = 70
 margin_left_bot = 550
+
+player_shots_miss = []
+player_shots_hit = []
 
 pygame.font.init()
 font = pygame.font.SysFont('arial', 20)
@@ -52,7 +57,6 @@ def get_grid_coords(mouse_pos, left_margin):
 
     return (row, column)
 
-
 running = True
 while running:
     for event in pygame.event.get():
@@ -62,22 +66,45 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
-                print(f"клік в пікселях: {mouse_pos}")
-
-                coords_player = get_grid_coords(mouse_pos, margin_left_player)
-                if coords_player:
-                    row, col = coords_player
-                    print(f"поле ігрока: Матриця({row}, {col}), Клітинка {letters[col]}{row + 1}")
 
                 coords_bot = get_grid_coords(mouse_pos, margin_left_bot)
                 if coords_bot:
                     row, col = coords_bot
-                    print(f"поле бота: Матрица({row}, {col}), Клітинка {letters[col]}{row + 1}")
+                    current_shot = (row, col)
+
+                    if current_shot in player_shots_miss or current_shot in player_shots_hit:
+                        print("В цю клітинку вже вистрілено!")
+                    else:
+                        if (row + col) % 2 == 0:
+                            player_shots_hit.append(current_shot)
+                            print(f"Влучив! ({letters[col]}{row + 1})")
+                        else:
+                            player_shots_miss.append(current_shot)
+                            print(f"Мимо! ({letters[col]}{row + 1})")
 
     screen.fill(BLUE)
-
     draw_grid(screen, margin_left_player)
     draw_grid(screen, margin_left_bot)
+
+    for shot in player_shots_miss:
+        r, c = shot
+        x = margin_left_bot + c * cell_size + cell_size // 2
+        y = margin_top + r * cell_size + cell_size // 2
+        pygame.draw.circle(screen, WHITE, (x, y), 5)
+
+    for shot in player_shots_hit:
+        r, c = shot
+        x_left = margin_left_bot + c * cell_size
+        y_top = margin_top + r * cell_size
+
+        start_point_1 = (x_left + offset, y_top + offset)
+        end_point_1 = (x_left + cell_size - offset, y_top + cell_size - offset)
+
+        start_point_2 = (x_left + cell_size - offset, y_top + offset)
+        end_point_2 = (x_left + offset, y_top + cell_size - offset)
+
+        pygame.draw.line(screen, RED, start_point_1, end_point_1, 3)  # 3 — это толщина линии
+        pygame.draw.line(screen, RED, start_point_2, end_point_2, 3)
 
     # Обновлення екрану
     pygame.display.flip()
