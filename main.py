@@ -17,7 +17,7 @@ bot_shots_miss = []
 bot_shots_hit = []
 
 # Ініціалізація бота
-bot_brain = Bot("Комп'ютер", None)
+bot_brain = Bot("Комп'ютер", None, None)
 
 # Кораблі бота
 bot_ships = []
