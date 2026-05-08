@@ -6,5 +6,3 @@ class Player:
         self.name = name
         self.board = board
         self.enemy_board = enemy_board
-        self.enemy_board = enemy_board
-
