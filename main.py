@@ -1,19 +1,49 @@
 import pygame
+from Ship import Ship
+from Bot import Bot
+
+# 1. Ініціалізація флоту гравця
+player_ships = []
+ps1 = Ship(3, "v")
+ps1.set_coordinate(2, 2)  # Корабель на В3, В4, В5
+player_ships.append(ps1)
+
+ps2 = Ship(1, "h")
+ps2.set_coordinate(7, 7)  # Одиночний корабель
+player_ships.append(ps2)
+
+# 2. Списки для відображення пострілів бота на полі гравця
+bot_shots_miss = []
+bot_shots_hit = []
+
+# Ініціалізація бота
+bot_brain = Bot("Комп'ютер", None)
+
+# Кораблі бота
+bot_ships = []
+s1 = Ship(3, "h")
+s1.set_coordinate(0, 0)
+bot_ships.append(s1)
+
+s2 = Ship(2, "v")
+s2.set_coordinate(4, 5)
+bot_ships.append(s2)
+
+
 
 pygame.init()
-
 screen = pygame.display.set_mode((1000, 600))
 pygame.display.set_caption("Морський бій")
 
 BLUE = (80, 134, 191)
 WHITE = (255, 255, 255)
 RED = (200, 0, 0)
+GRAY = (100, 100, 100)  # Колір для кораблів
 offset = 10
 
-# Налаштування поля
-cell_size = 40  # Раозмір клітинки
-board_size = 10  # 10 на 10
-margin_top = 80  # зверху
+cell_size = 40
+board_size = 10
+margin_top = 80
 margin_left_player = 70
 margin_left_bot = 550
 
@@ -22,41 +52,35 @@ player_shots_hit = []
 
 pygame.font.init()
 font = pygame.font.SysFont('arial', 20)
+letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']  # Виправив літери до стандарту
 
-letters = ['A', 'B', 'C', 'D', 'E', 'F', 'J', 'K', 'L', 'M']
 
+# Функції малювання
 def draw_grid(screen, left_margin):
     for i in range(board_size + 1):
         y = margin_top + i * cell_size
         pygame.draw.line(screen, WHITE, (left_margin, y), (left_margin + board_size * cell_size, y), 2)
-
         x = left_margin + i * cell_size
         pygame.draw.line(screen, WHITE, (x, margin_top), (x, margin_top + board_size * cell_size), 2)
 
     for i in range(board_size):
         letter_text = font.render(letters[i], True, WHITE)
         letter_x = left_margin + i * cell_size + (cell_size // 2) - (letter_text.get_width() // 2)
-        letter_y = margin_top - 30
-        screen.blit(letter_text, (letter_x, letter_y))
-
+        screen.blit(letter_text, (letter_x, margin_top - 30))
         num_text = font.render(str(i + 1), True, WHITE)
-        num_x = left_margin - 30 - (num_text.get_width() // 2)
         num_y = margin_top + i * cell_size + (cell_size // 2) - (num_text.get_height() // 2)
-        screen.blit(num_text, (num_x, num_y))
+        screen.blit(num_text, (left_margin - 30, num_y))
+
 
 def get_grid_coords(mouse_pos, left_margin):
     mx, my = mouse_pos
-
-    if my < margin_top or my >= margin_top + board_size * cell_size:
+    if not (margin_top <= my < margin_top + board_size * cell_size and
+            left_margin <= mx < left_margin + board_size * cell_size):
         return None
-    if mx < left_margin or mx >= left_margin + board_size * cell_size:
-        return None
+    return (my - margin_top) // cell_size, (mx - left_margin) // cell_size
 
-    column = (mx - left_margin) // cell_size
-    row = (my - margin_top) // cell_size
 
-    return (row, column)
-
+# Головний цикл
 running = True
 while running:
     for event in pygame.event.get():
@@ -66,47 +90,72 @@ while running:
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouse_pos = pygame.mouse.get_pos()
-
                 coords_bot = get_grid_coords(mouse_pos, margin_left_bot)
-                if coords_bot:
-                    row, col = coords_bot
-                    current_shot = (row, col)
 
-                    if current_shot in player_shots_miss or current_shot in player_shots_hit:
+                if coords_bot:
+                    if coords_bot in player_shots_miss or coords_bot in player_shots_hit:
                         print("В цю клітинку вже вистрілено!")
                     else:
-                        if (row + col) % 2 == 0:
-                            player_shots_hit.append(current_shot)
-                            print(f"Влучив! ({letters[col]}{row + 1})")
-                        else:
-                            player_shots_miss.append(current_shot)
-                            print(f"Мимо! ({letters[col]}{row + 1})")
+                        hit_detected = False
+                        for ship in bot_ships:
+                            if coords_bot in ship.coordinates:
+                                ship.hiten()  #
+                                player_shots_hit.append(coords_bot)
+                                hit_detected = True
+                                if ship.defeated(): print("КОРАБЕЛЬ БОТА ПОТОПЛЕНО!")  #
+                                break
+
+                        if not hit_detected:
+                            player_shots_miss.append(coords_bot)
+
+                            # Ход (починається після промаху гравця)
+                            bot_turn = True
+                            while bot_turn:
+                                b_row, b_col = bot_brain.get_move()  #
+                                bot_hit = False
+                                for p_ship in player_ships:
+                                    if (b_row, b_col) in p_ship.coordinates:
+                                        p_ship.hiten()  #
+                                        bot_shots_hit.append((b_row, b_col))
+                                        bot_hit = True
+                                        if p_ship.defeated(): print("Твій корабель вбито!")
+                                        break
+
+                                if not bot_hit:
+                                    bot_shots_miss.append((b_row, b_col))
+                                    bot_turn = False  # Бот промахнувся, хід повертається до гравця
 
     screen.fill(BLUE)
     draw_grid(screen, margin_left_player)
     draw_grid(screen, margin_left_bot)
 
-    for shot in player_shots_miss:
-        r, c = shot
-        x = margin_left_bot + c * cell_size + cell_size // 2
-        y = margin_top + r * cell_size + cell_size // 2
-        pygame.draw.circle(screen, WHITE, (x, y), 5)
+    # 3. Малюємо кораблі гравця (на лівому полі)
+    for ship in player_ships:
+        for r, c in ship.coordinates:
+            pygame.draw.rect(screen, GRAY, (margin_left_player + c * cell_size + 2,
+                                            margin_top + r * cell_size + 2,
+                                            cell_size - 4, cell_size - 4))
 
-    for shot in player_shots_hit:
-        r, c = shot
-        x_left = margin_left_bot + c * cell_size
-        y_top = margin_top + r * cell_size
+    # 4. Малюємо постріли на обох полях
+    # Постріли гравця по боту
+    for r, c in player_shots_miss:
+        pygame.draw.circle(screen, WHITE, (margin_left_bot + c * cell_size + 20, margin_top + r * cell_size + 20), 5)
+    for r, c in player_shots_hit:
+        # Малюємо хрестик
+        x = margin_left_bot + c * cell_size
+        y = margin_top + r * cell_size
+        pygame.draw.line(screen, RED, (x + offset, y + offset), (x + cell_size - offset, y + cell_size - offset), 3)
+        pygame.draw.line(screen, RED, (x + cell_size - offset, y + offset), (x + offset, y + cell_size - offset), 3)
 
-        start_point_1 = (x_left + offset, y_top + offset)
-        end_point_1 = (x_left + cell_size - offset, y_top + cell_size - offset)
+    # Постріли бота по гравцю
+    for r, c in bot_shots_miss:
+        pygame.draw.circle(screen, WHITE, (margin_left_player + c * cell_size + 20, margin_top + r * cell_size + 20), 5)
+    for r, c in bot_shots_hit:
+        x = margin_left_player + c * cell_size
+        y = margin_top + r * cell_size
+        pygame.draw.line(screen, RED, (x + offset, y + offset), (x + cell_size - offset, y + cell_size - offset), 3)
+        pygame.draw.line(screen, RED, (x + cell_size - offset, y + offset), (x + offset, y + cell_size - offset), 3)
 
-        start_point_2 = (x_left + cell_size - offset, y_top + offset)
-        end_point_2 = (x_left + offset, y_top + cell_size - offset)
-
-        pygame.draw.line(screen, RED, start_point_1, end_point_1, 3)  # 3 — это толщина линии
-        pygame.draw.line(screen, RED, start_point_2, end_point_2, 3)
-
-    # Обновлення екрану
     pygame.display.flip()
-# Вихід
+
 pygame.quit()
