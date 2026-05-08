@@ -13,3 +13,4 @@ class Bot(player):
         x, y = self.possible_opt.pop(0)
         while (x, y) in self.shoted and self.possible_opt:
             x, y = self.possible_opt.pop(0)
+#K
