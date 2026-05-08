@@ -1,4 +1,7 @@
 import pygame
+from Board import Board
+from Bot import Bot
+from Ship import Ship
 
 pygame.init()
 
@@ -11,7 +14,7 @@ RED = (200, 0, 0)
 offset = 10
 
 # Налаштування поля
-cell_size = 40  # Раозмір клітинки
+cell_size = 40  # Розмір клітинки
 board_size = 10  # 10 на 10
 margin_top = 80  # зверху
 margin_left_player = 70
@@ -75,7 +78,7 @@ while running:
                     if current_shot in player_shots_miss or current_shot in player_shots_hit:
                         print("В цю клітинку вже вистрілено!")
                     else:
-                        if (row + col) % 2 == 0:
+                        if (row + col) % 2 == 0: # помінять
                             player_shots_hit.append(current_shot)
                             print(f"Влучив! ({letters[col]}{row + 1})")
                         else:
