@@ -1,4 +1,5 @@
 import pygame
+<<<<<<< HEAD
 from Ship import Ship
 from Bot import Bot
 
@@ -30,6 +31,11 @@ s2.set_coordinate(4, 5)
 bot_ships.append(s2)
 
 
+=======
+from Board import Board
+from Bot import Bot
+from Ship import Ship
+>>>>>>> ae316776981dea54ba5ff81e1589e1a5154c388e
 
 pygame.init()
 screen = pygame.display.set_mode((1000, 600))
@@ -41,9 +47,16 @@ RED = (200, 0, 0)
 GRAY = (100, 100, 100)  # Колір для кораблів
 offset = 10
 
+<<<<<<< HEAD
 cell_size = 40
 board_size = 10
 margin_top = 80
+=======
+# Налаштування поля
+cell_size = 40  # Розмір клітинки
+board_size = 10  # 10 на 10
+margin_top = 80  # зверху
+>>>>>>> ae316776981dea54ba5ff81e1589e1a5154c388e
 margin_left_player = 70
 margin_left_bot = 550
 
@@ -96,6 +109,7 @@ while running:
                     if coords_bot in player_shots_miss or coords_bot in player_shots_hit:
                         print("В цю клітинку вже вистрілено!")
                     else:
+<<<<<<< HEAD
                         hit_detected = False
                         for ship in bot_ships:
                             if coords_bot in ship.coordinates:
@@ -124,6 +138,14 @@ while running:
                                 if not bot_hit:
                                     bot_shots_miss.append((b_row, b_col))
                                     bot_turn = False  # Бот промахнувся, хід повертається до гравця
+=======
+                        if (row + col) % 2 == 0: # помінять
+                            player_shots_hit.append(current_shot)
+                            print(f"Влучив! ({letters[col]}{row + 1})")
+                        else:
+                            player_shots_miss.append(current_shot)
+                            print(f"Мимо! ({letters[col]}{row + 1})")
+>>>>>>> ae316776981dea54ba5ff81e1589e1a5154c388e
 
     screen.fill(BLUE)
     draw_grid(screen, margin_left_player)

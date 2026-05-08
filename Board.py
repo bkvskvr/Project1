@@ -1,3 +1,6 @@
+import random
+from Ship import Ship
+
 class ShotIndexError(Exception):
     pass
 
@@ -65,3 +68,25 @@ class Board:
                 return None
         except ShotIndexError:
             return None
+
+    def auto_place_ships(self):
+        # Стандартний набір кораблів: один на 4, два на 3, три на 2, чотири на 1
+        ship_lengths = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]
+
+        for length in ship_lengths:
+            placed = False
+            while not placed:
+                # Випадково обираємо орієнтацію: 'h' - горизонтальна, 'v' - вертикальна
+                orientation = random.choice(['h', 'v'])
+                # Випадкові координати початку корабля
+                x = random.randint(0, 9)
+                y = random.randint(0, 9)
+
+                # Створюємо тимчасовий об'єкт корабля
+                new_ship = Ship(length, orientation)
+                new_ship.set_coordinate(x, y) # Генеруємо його координати
+
+                # Намагаємося додати його на поле
+                # add_ship сам перевірить, чи не виходить він за межі і чи не стоїть поруч з іншими
+                if self.add_ship(new_ship):
+                    placed = True
