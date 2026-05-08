@@ -21,7 +21,6 @@ class Ship:
 
     def set_coordinate(self, row, col):
         self.coordinates = []
-
         for i in range(self.length):
             if self.orientation == "h":  # горизонтально
                 self.coordinates.append((row, col + i))
