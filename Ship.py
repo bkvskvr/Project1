@@ -19,11 +19,12 @@ class Ship:
     def defeated(self):
         return self.lives == 0
 
-    def set_coordinate(self, row, col):
+    def set_coordinate(self, x, y):
         self.coordinates = []
         for i in range(self.length):
             if self.orientation == "h":  # горизонтально
-                self.coordinates.append((row, col + i))
+                # Додаємо координати по горизонталі (змінюється x)
+                self.coordinates.append((x + i, y))
             elif self.orientation == "v":  # вертикально
-                self.coordinates.append((row + i, col))
-
+                # Додаємо координати по вертикалі (змінюється y)
+                self.coordinates.append((x, y + i))
