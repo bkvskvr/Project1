@@ -1,6 +1,5 @@
 from random import randint
 from Player import Player
-from Ship import Ship
 
 class Bot(Player):
 
@@ -36,7 +35,7 @@ class Bot(Player):
         # він додає сусідні клітинки до списку, де можливо буде ще один успішний постріл
 
         # Напрямки для перевірки: (зміщення_row, зміщення_col)
-        # (-1, 0) - вгору, (1, 0) - вниз, (0, -1) - ліворуч, (0, 1) - праворуч
+        # (-1, 0) вгору, (1, 0) вниз, (0, -1) ліворуч, (0, 1) праворуч
         directions = [(-1, 0), (1, 0), (0, -1), (0, 1)]
 
         for d_row, d_col in directions:

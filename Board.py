@@ -76,7 +76,7 @@ class Board:
         for length in ship_lengths:
             placed = False
             while not placed:
-                # Випадково обираємо орієнтацію: 'h' - горизонтальна, 'v' - вертикальна
+                # Випадково обираємо орієнтацію: h - горизонтальна, v - вертикальна
                 orientation = random.choice(['h', 'v'])
                 # Випадкові координати початку корабля
                 x = random.randint(0, 9)

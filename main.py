@@ -5,41 +5,18 @@ from Bot import Bot
 from Board import Board
 
 def reset_game():
-    global player_board, bot_board, bot_brain, player_ships, game_state
-    global current_orientation, game_message, player_shots_miss, player_shots_hit
-    global bot_shots_miss, bot_shots_hit, selected_arsenal_idx, arsenal
+    global player_board, bot_board, bot_brain, game_state
+    global current_orientation, game_message, selected_arsenal_idx, arsenal
 
     player_board = Board()
     bot_board = Board()
-    bot_brain = Bot("Комп'ютер", bot_board, player_board)
-    player_ships = []
+    bot_brain = Bot("Бот", bot_board, player_board)
     game_state = "PLACING"
     current_orientation = "h" # Початкова орієнтація
     game_message = "Оберіть корабель, клікніть на нього."
-    player_shots_miss = []
-    player_shots_hit = []
-    bot_shots_miss = []
-    bot_shots_hit = []
     selected_arsenal_idx = None
     for item in arsenal:
         item["used"] = False
-# Створюєм дошки
-player_board = Board()
-bot_board = Board()
-
-player_ships = []
-game_state = "PLACING"
-current_orientation = "h" # Початкова орієнтація
-
-# повідомлення для екрану
-game_message = "Оберіть корабель, клікніть на нього."
-
-# 2. Списки для пострілів бота на полі гравця
-bot_shots_miss = []
-bot_shots_hit = []
-
-bot_brain = Bot("Бот", bot_board, player_board)
-bot_ships = []
 
 # Налаштування Pygame     ДАРИНА ТУТ ПЕРЕГЛЯНЬ І ГАРНО ОФОРМИ!!!
 pygame.init()
@@ -58,9 +35,6 @@ board_size = 10
 margin_top = 80
 margin_left_player = 70
 margin_left_bot = 530
-
-player_shots_miss = []
-player_shots_hit = []
 
 pygame.font.init() # ДАРИНА, ЗВЕРНИ УВАГУ!!!!!!!!!!!
 font = pygame.font.SysFont('arial', 20)
@@ -113,23 +87,8 @@ def get_grid_coords(mouse_pos, left_margin):
         return None
     return (my - margin_top) // cell_size, (mx - left_margin) // cell_size
 
-def place_bot_ships(board):
-    lengths = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]
-    for length in lengths:
-        placed = False
-        attempts = 0
-        while not placed and attempts < 1000:
-            orient = random.choice(['h', 'v'])
-            x = random.randint(0, 9)
-            y = random.randint(0, 9)
-            ship = Ship(length, orient)
-            ship.set_coordinate(x, y)
-            if board.add_ship(ship):
-                placed = True
-            attempts += 1
-
 # Функція для автоматичного замальовування навколо потопленого корабля
-def mark_destroyed_perimeter(board, ship, shots_miss_list, bot_brain=None):
+def mark_destroyed_perimeter(board, ship, bot_brain=None):
     for sx, sy in ship.coordinates:
         for dx in [-1, 0, 1]:
             for dy in [-1, 0, 1]:
@@ -137,8 +96,6 @@ def mark_destroyed_perimeter(board, ship, shots_miss_list, bot_brain=None):
                 if 0 <= nx < 10 and 0 <= ny < 10:
                     if board.field[ny][nx] == 0:
                         board.field[ny][nx] = 2
-                        if (ny, nx) not in shots_miss_list:
-                            shots_miss_list.append((ny, nx))
                         if bot_brain is not None:
                             bot_brain.shoted.add((ny, nx))
                             if (ny, nx) in bot_brain.possible_opt:
@@ -201,16 +158,16 @@ while running:
                             r, c = coords_player # r = y (рядок), c = x (стовпчик)
                             length = arsenal[selected_arsenal_idx]["length"]
                             temp_ship = Ship(length, current_orientation)
-                            temp_ship.set_coordinate(c, r)
+                            temp_ship.set_coordinate(c, r) #
 
-                            if player_board.add_ship(temp_ship):
+                            if player_board.add_ship(temp_ship): #
                                 arsenal[selected_arsenal_idx]["used"] = True
                                 selected_arsenal_idx = None
                                 game_message = "Корабель встановлено! Оберіть наступний."
 
                                 # Перевірка чи всі кораблі розставлені
                                 if all(item["used"] for item in arsenal):
-                                    place_bot_ships(bot_board)
+                                    bot_board.auto_place_ships() #
                                     game_state = "PLAYING"
                                     game_message = "Флот розгорнуто! Твій хід — стріляй по правому полю."
                             else:
@@ -221,38 +178,36 @@ while running:
                     coords_bot = get_grid_coords(mouse_pos, margin_left_bot)
                     if coords_bot:
                         r, c = coords_bot
-                        if coords_bot in player_shots_miss or coords_bot in player_shots_hit:
+                        # Перевірка через матрицю поля
+                        if bot_board.field[r][c] in [2, 3]: #
                             game_message = "В цю клітинку вже вистрілено! Обери іншу."
                         else:
-                            result = bot_board.shot(c, r)
+                            result = bot_board.shot(c, r) #
                             if result is True:
-                                player_shots_hit.append(coords_bot)
                                 game_message = f"Влучив у {letters[r]}{c + 1}!"
 
                                 # Шукаємо, який саме корабель бота підбито
                                 for ship in bot_board.ships:
                                     if (c, r) in ship.coordinates:
-                                        ship.hiten()
+                                        ship.hiten() #
                                         if ship.defeated():
                                             game_message += " КОРАБЕЛЬ ЗНИЩЕНО!"
-                                            mark_destroyed_perimeter(bot_board, ship, player_shots_miss)
+                                            mark_destroyed_perimeter(bot_board, ship)
                                             if all(s.defeated() for s in bot_board.ships):
                                                 game_state = "GAME_OVER"
                                         break
                             elif result is False:
-                                player_shots_miss.append(coords_bot)
                                 game_message = "Мимо! "
 
                                 # Хід бота
                                 bot_turn = True
                                 bot_hit_flag = False
                                 while bot_turn and game_state == "PLAYING":
-                                    b_move = bot_brain.get_move()
+                                    b_move = bot_brain.get_move() #
                                     if not b_move: break
                                     b_row, b_col = b_move
-                                    b_res = player_board.shot(b_col, b_row)
+                                    b_res = player_board.shot(b_col, b_row) #
                                     if b_res is True:
-                                        bot_shots_hit.append((b_row, b_col))
                                         bot_brain.register_hit(b_row, b_col)
                                         bot_hit_flag = True
 
@@ -261,13 +216,12 @@ while running:
                                             if (b_col, b_row) in ship.coordinates:
                                                 ship.hiten()
                                                 if ship.defeated():
-                                                    mark_destroyed_perimeter(player_board, ship, bot_shots_miss, bot_brain)
+                                                    mark_destroyed_perimeter(player_board, ship, bot_brain)
                                                     if all(s.defeated() for s in player_board.ships):
                                                         game_state = "GAME_OVER"
                                                         bot_turn = False
                                                 break
                                     elif b_res is False:
-                                        bot_shots_miss.append((b_row, b_col))
                                         bot_turn = False
                                 if game_state == "PLAYING":
                                     if bot_hit_flag:
@@ -313,21 +267,24 @@ while running:
                         pygame.draw.rect(screen, (150, 150, 150), (margin_left_player + x * cell_size + 2, margin_top + y * cell_size + 2, cell_size - 4, cell_size - 4))
 
     if game_state in ["PLAYING", "GAME_OVER"]:
-        # Малюємо постріли гравця по боту
-        for r, c in player_shots_miss:
-            pygame.draw.circle(screen, WHITE, (margin_left_bot + c * cell_size + 20, margin_top + r * cell_size + 20), 5)
-        for r, c in player_shots_hit:
-            x, y = margin_left_bot + c * cell_size, margin_top + r * cell_size
-            pygame.draw.line(screen, RED, (x + offset, y + offset), (x + cell_size - offset, y + cell_size - offset), 3)
-            pygame.draw.line(screen, RED, (x + cell_size - offset, y + offset), (x + offset, y + cell_size - offset), 3)
+        # Малюємо постріли НАПРЯМУ З МАТРИЦІ ДОШКИ
+        for y in range(10):
+            for x in range(10):
+                # Малюємо постріли гравця по боту
+                if bot_board.field[y][x] == 2: # Промах
+                    pygame.draw.circle(screen, WHITE, (margin_left_bot + x * cell_size + 20, margin_top + y * cell_size + 20), 5)
+                elif bot_board.field[y][x] == 3: # Влучання
+                    px, py = margin_left_bot + x * cell_size, margin_top + y * cell_size
+                    pygame.draw.line(screen, RED, (px + offset, py + offset), (px + cell_size - offset, py + cell_size - offset), 3)
+                    pygame.draw.line(screen, RED, (px + cell_size - offset, py + offset), (px + offset, py + cell_size - offset), 3)
 
-        # Малюємо постріли бота по гравцю
-        for r, c in bot_shots_miss:
-            pygame.draw.circle(screen, WHITE, (margin_left_player + c * cell_size + 20, margin_top + r * cell_size + 20), 5)
-        for r, c in bot_shots_hit:
-            x, y = margin_left_player + c * cell_size, margin_top + r * cell_size
-            pygame.draw.line(screen, RED, (x + offset, y + offset), (x + cell_size - offset, y + cell_size - offset), 3)
-            pygame.draw.line(screen, RED, (x + cell_size - offset, y + offset), (x + offset, y + cell_size - offset), 3)
+                # Малюємо постріли бота по гравцю
+                if player_board.field[y][x] == 2: # Промах
+                    pygame.draw.circle(screen, WHITE, (margin_left_player + x * cell_size + 20, margin_top + y * cell_size + 20), 5)
+                elif player_board.field[y][x] == 3: # Влучання
+                    px, py = margin_left_player + x * cell_size, margin_top + y * cell_size
+                    pygame.draw.line(screen, RED, (px + offset, py + offset), (px + cell_size - offset, py + cell_size - offset), 3)
+                    pygame.draw.line(screen, RED, (px + cell_size - offset, py + offset), (px + offset, py + cell_size - offset), 3)
 
     # Відображення повідомлень внизу екрана
     msg_surface = font_large.render(game_message, True, YELLOW) #ДАРИНА МІНЯЙ
