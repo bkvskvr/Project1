@@ -22,12 +22,31 @@ def reset_game():
 pygame.init()
 screen = pygame.display.set_mode((1000, 600))
 pygame.display.set_caption("Морський бій")
+background = pygame.image.load("background.jpg")
+background = pygame.transform.scale(background, (1000, 600))
 
-BLUE = (80, 134, 191)
+BG_COLOR = (7, 15, 25)
+
+GRID_COLOR = (70, 130, 180)
+
+TEXT_COLOR = (220, 230, 255)
+
+ACCENT = (0, 200, 255)
+
+SHIP_COLOR = (40, 40, 55)
+
+SHIP_HOVER = (0, 220, 255)
+
+HIT_COLOR = (255, 70, 70)
+
+MISS_COLOR = (180, 220, 255)
+
+PANEL_COLOR = (15, 25, 40)
+
+GLOW = (0, 255, 255)
 WHITE = (255, 255, 255)
-RED = (200, 0, 0)
-GRAY = (100, 100, 100)
-YELLOW = (255, 255, 0)
+GRAY = (127, 127, 127)
+RED = HIT_COLOR
 DARK_OVERLAY = (0, 0, 0, 180)
 offset = 10
 cell_size = 40
@@ -37,9 +56,9 @@ margin_left_player = 70
 margin_left_bot = 530
 
 pygame.font.init() # ДАРИНА, ЗВЕРНИ УВАГУ!!!!!!!!!!!
-font = pygame.font.SysFont('arial', 20)
-font_large = pygame.font.SysFont('arial', 26, bold=True)
-font_huge = pygame.font.SysFont('arial', 60, bold=True)
+font = pygame.font.SysFont("Cy Grotesk Std Trial", 20)
+font_large = pygame.font.SysFont("Cy Grotesk Std Trial", 28, bold=True)
+font_huge = pygame.font.SysFont("Cy Grotesk Std Trial", 72, bold=True)
 letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
 # Можливий вибір всіх кораблів
@@ -62,30 +81,57 @@ reset_game()
 
 # Функції малювання
 def draw_grid(screen, left_margin, letters_on_right=False):
-    for i in range(board_size + 1):
-        y = margin_top + i * cell_size
-        pygame.draw.line(screen, WHITE, (left_margin, y), (left_margin + board_size * cell_size, y), 2)
-        x = left_margin + i * cell_size
-        pygame.draw.line(screen, WHITE, (x, margin_top), (x, margin_top + board_size * cell_size), 2)
+
+    for row in range(board_size):
+        for col in range(board_size):
+
+            rect = pygame.Rect(
+                left_margin + col * cell_size,
+                margin_top + row * cell_size,
+                cell_size,
+                cell_size
+            )
+
+            pygame.draw.rect(
+                screen,
+                GRID_COLOR,
+                rect,
+                1,
+                border_radius=6
+            )
 
     for i in range(board_size):
-        num_text = font.render(str(i + 1), True, WHITE)
-        num_x = left_margin + i * cell_size + (cell_size // 2) - (num_text.get_width() // 2)
+
+        num_text = font.render(str(i + 1), True, TEXT_COLOR)
+
+        num_x = (
+            left_margin
+            + i * cell_size
+            + (cell_size // 2)
+            - (num_text.get_width() // 2)
+        )
+
         screen.blit(num_text, (num_x, margin_top - 30))
 
-        letter_text = font.render(letters[i], True, WHITE)
-        letter_y = margin_top + i * cell_size + (cell_size // 2) - (letter_text.get_height() // 2)
-        if letters_on_right:
-            screen.blit(letter_text, (left_margin + board_size * cell_size + 10, letter_y))
-        else:
-            screen.blit(letter_text, (left_margin - 30, letter_y))
+        letter_text = font.render(letters[i], True, TEXT_COLOR)
 
-def get_grid_coords(mouse_pos, left_margin):
-    mx, my = mouse_pos
-    if not (margin_top <= my < margin_top + board_size * cell_size and
-            left_margin <= mx < left_margin + board_size * cell_size):
-        return None
-    return (my - margin_top) // cell_size, (mx - left_margin) // cell_size
+        letter_y = (
+            margin_top
+            + i * cell_size
+            + (cell_size // 2)
+            - (letter_text.get_height() // 2)
+        )
+
+        if letters_on_right:
+            screen.blit(
+                letter_text,
+                (left_margin + board_size * cell_size + 10, letter_y)
+            )
+        else:
+            screen.blit(
+                letter_text,
+                (left_margin - 30, letter_y)
+            )
 
 # Функція для автоматичного замальовування навколо потопленого корабля
 def mark_destroyed_perimeter(board, ship, bot_brain=None):
@@ -107,7 +153,7 @@ def draw_end_screen(screen, win=True):
     screen.blit(overlay, (0,0))
 
     title_text = "ПЕРЕМОГА!" if win else "ПОРАЗКА..."
-    color = YELLOW if win else RED
+    color = SHIP_COLOR if win else RED
 
     title_surf = font_huge.render(title_text, True, color)
     title_rect = title_surf.get_rect(center=(500, 250))
@@ -119,6 +165,18 @@ def draw_end_screen(screen, win=True):
 
 # Головний цикл
 running = True
+def get_grid_coords(pos, left_margin):
+    x, y = pos
+    # Перевіряємо, чи миша в межах сітки по горизонталі
+    if left_margin <= x <= left_margin + board_size * cell_size:
+        # Перевіряємо, чи миша в межах сітки по вертикалі
+        if margin_top <= y <= margin_top + board_size * cell_size:
+            col = (x - left_margin) // cell_size
+            row = (y - margin_top) // cell_size
+            # Захист від виходу за межі (на всякий випадок)
+            if 0 <= col < 10 and 0 <= row < 10:
+                return row, col
+    return None
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -127,14 +185,25 @@ while running:
         # Обертання корабля на 90 градусів
         elif event.type == pygame.KEYDOWN:
             if game_state == "PLACING":
-                if event.key in (pygame.K_RIGHT, pygame.K_LEFT):
-                    current_orientation = "v" if current_orientation == "h" else "h"
+                # Заголовок з невеликою тінню
+                arsenal_title = font_large.render("АРСЕНАЛ ФЛОТУ", True, ACCENT)
+                screen.blit(arsenal_title, (margin_left_bot, margin_top - 45))
 
-            if game_state == "GAME_OVER":
-                if event.key == pygame.K_r:
-                    reset_game()
-                elif event.key == pygame.K_ESCAPE:
-                    running = False
+                for i, item in enumerate(arsenal):
+                    if not item["used"]:
+                        # Якщо корабель вибрано — він світиться
+                        is_selected = (i == selected_arsenal_idx)
+                        color = GLOW if is_selected else SHIP_COLOR
+                        border_color = WHITE if is_selected else GRID_COLOR
+
+                        # Малюємо основне тіло корабля
+                        pygame.draw.rect(screen, color, item["rect"], border_radius=4)
+                        pygame.draw.rect(screen, border_color, item["rect"], 2, border_radius=4)
+
+                        # Малюємо розділювачі секцій (палуби)
+                        for j in range(1, item["length"]):
+                            lx = item["rect"].left + j * cell_size
+                            pygame.draw.line(screen, PANEL_COLOR, (lx, item["rect"].top), (lx, item["rect"].bottom), 1)
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1 and game_state != "GAME_OVER":
@@ -230,7 +299,11 @@ while running:
                                         game_message += " Бот промахнувся. Твій хід."
 
     # Отрисовка
-    screen.fill(BLUE)
+    screen.blit(background, (0, 0))
+    overlay = pygame.Surface((1000, 600), pygame.SRCALPHA)
+    overlay.fill((0, 0, 20, 120))
+
+    screen.blit(overlay, (0, 0))
     draw_grid(screen, margin_left_player, letters_on_right=False)
 
     if game_state in ["PLAYING", "GAME_OVER"]:
@@ -240,7 +313,30 @@ while running:
     # Беремо кораблі з об'єкта дошки
     for ship in player_board.ships:
         for x, y in ship.coordinates: # x - стовпець, y - рядок
-            pygame.draw.rect(screen, GRAY, (margin_left_player + x * cell_size + 2, margin_top + y * cell_size + 2, cell_size - 4, cell_size - 4))
+            pygame.draw.rect(
+                screen,
+                SHIP_COLOR,
+                (
+                    margin_left_player + x * cell_size + 2,
+                    margin_top + y * cell_size + 2,
+                    cell_size - 4,
+                    cell_size - 4
+                ),
+                border_radius=8
+            )
+
+            pygame.draw.rect(
+                screen,
+                ACCENT,
+                (
+                    margin_left_player + x * cell_size + 2,
+                    margin_top + y * cell_size + 2,
+                    cell_size - 4,
+                    cell_size - 4
+                ),
+                2,
+                border_radius=8
+            )
 
     # Відображення корабля пперед тим як розмістити його
     if game_state == "PLACING":
@@ -248,7 +344,7 @@ while running:
         screen.blit(arsenal_title, (margin_left_bot, margin_top - 40))
         for i, item in enumerate(arsenal):
             if not item["used"]:
-                color = YELLOW if i == selected_arsenal_idx else GRAY
+                color = SHIP_COLOR if i == selected_arsenal_idx else GRAY
                 pygame.draw.rect(screen, color, item["rect"])
                 pygame.draw.rect(screen, WHITE, item["rect"], 2)
                 for j in range(1, item["length"]):
@@ -264,7 +360,20 @@ while running:
                 # Малюємо світло-сірим кольором (тінь) ДАРИНА, МОЖЛИВО ЗРОБИШ ГАРНІШЕ
                 for x, y in hover_ship.coordinates:
                     if 0 <= x <= 9 and 0 <= y <= 9:
-                        pygame.draw.rect(screen, (150, 150, 150), (margin_left_player + x * cell_size + 2, margin_top + y * cell_size + 2, cell_size - 4, cell_size - 4))
+                        hover_surface = pygame.Surface(
+                            (cell_size - 4, cell_size - 4),
+                            pygame.SRCALPHA
+                        )
+
+                        hover_surface.fill((0, 255, 255, 120))
+
+                        screen.blit(
+                            hover_surface,
+                            (
+                                margin_left_player + x * cell_size + 2,
+                                margin_top + y * cell_size + 2
+                            )
+                        )
 
     if game_state in ["PLAYING", "GAME_OVER"]:
         # Малюємо постріли НАПРЯМУ З МАТРИЦІ ДОШКИ
@@ -287,12 +396,24 @@ while running:
                     pygame.draw.line(screen, RED, (px + cell_size - offset, py + offset), (px + offset, py + cell_size - offset), 3)
 
     # Відображення повідомлень внизу екрана
-    msg_surface = font_large.render(game_message, True, YELLOW) #ДАРИНА МІНЯЙ
+    pygame.draw.rect(
+        screen,
+        PANEL_COLOR,
+        (180, 510, 640, 55),
+        border_radius=15
+    )
+    msg_surface = font.render(game_message, True, TEXT_COLOR) #ДАРИНА МІНЯЙ
     msg_rect = msg_surface.get_rect(center=(500, 540))
     screen.blit(msg_surface, msg_rect)
 
     if game_state == "GAME_OVER":
         is_player_win = all(s.defeated() for s in bot_board.ships)
+        pygame.draw.rect(
+            screen,
+            (20, 20, 30),
+            (250, 180, 500, 220),
+            border_radius=25
+        )
         draw_end_screen(screen, win=is_player_win)
 
     pygame.display.flip()
