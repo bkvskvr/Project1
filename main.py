@@ -1,16 +1,19 @@
 import pygame
-import random
 from Ship import Ship
 from Bot import Bot
 from Board import Board
+from Player import Player
 
 def reset_game():
-    global player_board, bot_board, bot_brain, game_state
+    global player_board, bot_board, bot_brain, human_player, game_state
     global current_orientation, game_message, selected_arsenal_idx, arsenal
 
     player_board = Board()
     bot_board = Board()
+    # Ініціалізуємо і гравця, і бота як повноцінні об'єкти
+    human_player = Player("Гравець", player_board, bot_board)
     bot_brain = Bot("Бот", bot_board, player_board)
+
     game_state = "PLACING"
     current_orientation = "h" # Початкова орієнтація
     game_message = "Оберіть корабель, клікніть на нього."
@@ -185,7 +188,7 @@ while running:
         # Обертання корабля на 90 градусів
         elif event.type == pygame.KEYDOWN:
             if game_state == "PLACING":
-                # ВИПРАВЛЕНО: Повернув логіку повороту, яка була видалена!
+                # поворот корабля за допомогою стрілок на клавіатурі
                 if event.key in (pygame.K_RIGHT, pygame.K_LEFT):
                     current_orientation = "v" if current_orientation == "h" else "h"
 
@@ -241,7 +244,8 @@ while running:
                         if bot_board.field[r][c] in [2, 3]: #
                             game_message = "В цю клітинку вже вистрілено! Обери іншу."
                         else:
-                            result = bot_board.shot(c, r) #
+                            # РОБИМО ПОСТРІЛ ЧЕРЕЗ КЛАС ГРАВЦЯ
+                            result = human_player.make_shot(c, r)
                             if result is True:
                                 game_message = f"Влучив у {letters[r]}{c + 1}!"
 
@@ -252,7 +256,8 @@ while running:
                                         if ship.defeated():
                                             game_message += " КОРАБЕЛЬ ЗНИЩЕНО!"
                                             mark_destroyed_perimeter(bot_board, ship)
-                                            if all(s.defeated() for s in bot_board.ships):
+                                            # ПЕРЕВІРЯЄМО ПЕРЕМОГУ ЧЕРЕЗ КЛАС БОТА
+                                            if bot_brain.is_defeated():
                                                 game_state = "GAME_OVER"
                                         break
                             elif result is False:
@@ -265,7 +270,8 @@ while running:
                                     b_move = bot_brain.get_move() #
                                     if not b_move: break
                                     b_row, b_col = b_move
-                                    b_res = player_board.shot(b_col, b_row) #
+
+                                    b_res = bot_brain.make_shot(b_col, b_row)
                                     if b_res is True:
                                         bot_brain.register_hit(b_row, b_col)
                                         bot_hit_flag = True
@@ -276,12 +282,14 @@ while running:
                                                 ship.hiten()
                                                 if ship.defeated():
                                                     mark_destroyed_perimeter(player_board, ship, bot_brain)
-                                                    if all(s.defeated() for s in player_board.ships):
+                                                    # ПЕРЕВІРЯЄМО ПОРАЗКУ ЧЕРЕЗ КЛАС ГРАВЦЯ!
+                                                    if human_player.is_defeated():
                                                         game_state = "GAME_OVER"
                                                         bot_turn = False
                                                 break
                                     elif b_res is False:
                                         bot_turn = False
+
                                 if game_state == "PLAYING":
                                     if bot_hit_flag:
                                         game_message += " Бот влучив у твій корабель! Твій хід."
@@ -407,7 +415,8 @@ while running:
     screen.blit(msg_surface, msg_rect)
 
     if game_state == "GAME_OVER":
-        is_player_win = all(s.defeated() for s in bot_board.ships)
+        # І ТУТ ПЕРЕВІРКА ПЕРЕМОГИ ЧЕРЕЗ КЛАС БОТА!
+        is_player_win = bot_brain.is_defeated()
         pygame.draw.rect(
             screen,
             (20, 20, 30),
