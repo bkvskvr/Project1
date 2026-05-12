@@ -185,25 +185,15 @@ while running:
         # Обертання корабля на 90 градусів
         elif event.type == pygame.KEYDOWN:
             if game_state == "PLACING":
-                # Заголовок з невеликою тінню
-                arsenal_title = font_large.render("АРСЕНАЛ ФЛОТУ", True, ACCENT)
-                screen.blit(arsenal_title, (margin_left_bot, margin_top - 45))
+                # ВИПРАВЛЕНО: Повернув логіку повороту, яка була видалена!
+                if event.key in (pygame.K_RIGHT, pygame.K_LEFT):
+                    current_orientation = "v" if current_orientation == "h" else "h"
 
-                for i, item in enumerate(arsenal):
-                    if not item["used"]:
-                        # Якщо корабель вибрано — він світиться
-                        is_selected = (i == selected_arsenal_idx)
-                        color = GLOW if is_selected else SHIP_COLOR
-                        border_color = WHITE if is_selected else GRID_COLOR
-
-                        # Малюємо основне тіло корабля
-                        pygame.draw.rect(screen, color, item["rect"], border_radius=4)
-                        pygame.draw.rect(screen, border_color, item["rect"], 2, border_radius=4)
-
-                        # Малюємо розділювачі секцій (палуби)
-                        for j in range(1, item["length"]):
-                            lx = item["rect"].left + j * cell_size
-                            pygame.draw.line(screen, PANEL_COLOR, (lx, item["rect"].top), (lx, item["rect"].bottom), 1)
+            if game_state == "GAME_OVER":
+                if event.key == pygame.K_r:
+                    reset_game()
+                elif event.key == pygame.K_ESCAPE:
+                    running = False
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1 and game_state != "GAME_OVER":
@@ -340,15 +330,25 @@ while running:
 
     # Відображення корабля пперед тим як розмістити його
     if game_state == "PLACING":
-        arsenal_title = font_large.render("Набір кораблів:", True, WHITE)
-        screen.blit(arsenal_title, (margin_left_bot, margin_top - 40))
+        # ВИПРАВЛЕНО: Переніс код Дарини з клавіатурних подій сюди, у відмальовку!
+        arsenal_title = font_large.render("АРСЕНАЛ ФЛОТУ", True, ACCENT)
+        screen.blit(arsenal_title, (margin_left_bot, margin_top - 45))
+
         for i, item in enumerate(arsenal):
             if not item["used"]:
-                color = SHIP_COLOR if i == selected_arsenal_idx else GRAY
-                pygame.draw.rect(screen, color, item["rect"])
-                pygame.draw.rect(screen, WHITE, item["rect"], 2)
+                # Якщо корабель вибрано — він світиться
+                is_selected = (i == selected_arsenal_idx)
+                color = GLOW if is_selected else SHIP_COLOR
+                border_color = WHITE if is_selected else GRID_COLOR
+
+                # Малюємо основне тіло корабля
+                pygame.draw.rect(screen, color, item["rect"], border_radius=4)
+                pygame.draw.rect(screen, border_color, item["rect"], 2, border_radius=4)
+
+                # Малюємо розділювачі секцій (палуби)
                 for j in range(1, item["length"]):
-                    pygame.draw.line(screen, WHITE, (item["rect"].left + j * cell_size, item["rect"].top), (item["rect"].left + j * cell_size, item["rect"].bottom), 1)
+                    lx = item["rect"].left + j * cell_size
+                    pygame.draw.line(screen, PANEL_COLOR, (lx, item["rect"].top), (lx, item["rect"].bottom), 1)
 
         if selected_arsenal_idx is not None:
             mouse_pos = pygame.mouse.get_pos()
