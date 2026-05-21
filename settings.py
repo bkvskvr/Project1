@@ -1,0 +1,22 @@
+BG_COLOR = (7, 15, 25)
+GRID_COLOR = (70, 130, 180)
+TEXT_COLOR = (220, 230, 255)
+ACCENT = (0, 200, 255)
+SHIP_COLOR = (40, 40, 55)
+SHIP_HOVER = (0, 220, 255)
+HIT_COLOR = (255, 70, 70)
+MISS_COLOR = (180, 220, 255)
+PANEL_COLOR = (15, 25, 40)
+GLOW = (0, 255, 255)
+WHITE = (255, 255, 255)
+GRAY = (127, 127, 127)
+RED = HIT_COLOR
+DARK_OVERLAY = (0, 0, 0, 180)
+offset = 10
+cell_size = 40
+board_size = 10
+margin_top = 80
+margin_left_player = 70
+margin_left_bot = 530
+
+letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']

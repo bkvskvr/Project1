@@ -1,5 +1,7 @@
 import pygame
-import random
+from settings import *
+import assets
+from ui import *
 from Ship import Ship
 from Bot import Bot
 from Board import Board
@@ -29,77 +31,14 @@ def reset_game():
     destroyed_ships = []  # координати знищених кораблів гравця
     destroyed_bot_ships = []  # координати знищених кораблів бота
 
+assets.init_game()
 
-# Налаштування Pygame     ДАРИНА ТУТ ПЕРЕГЛЯНЬ І ГАРНО ОФОРМИ!!!
-pygame.init()
-screen = pygame.display.set_mode((1000, 600))
-pygame.display.set_caption("Морський бій")
+# розпаковуємо змінні, щоб не писати "assets." скрізь:
+screen, ship_images, font, font_large, font_huge, background = (
+    assets.screen, assets.ship_images, assets.font,
+    assets.font_large, assets.font_huge, assets.background
+)
 
-try:
-    background = pygame.image.load("background.jpg")
-    background = pygame.transform.scale(background, (1000, 600))
-except Exception:
-    # Заглушка, якщо картинки ще немає в папці
-    background = pygame.Surface((1000, 600))
-    background.fill((7, 15, 25))
-
-BG_COLOR = (7, 15, 25)
-GRID_COLOR = (70, 130, 180)
-TEXT_COLOR = (220, 230, 255)
-ACCENT = (0, 200, 255)
-SHIP_COLOR = (40, 40, 55)
-SHIP_HOVER = (0, 220, 255)
-HIT_COLOR = (255, 70, 70)
-MISS_COLOR = (180, 220, 255)
-PANEL_COLOR = (15, 25, 40)
-GLOW = (0, 255, 255)
-WHITE = (255, 255, 255)
-GRAY = (127, 127, 127)
-RED = HIT_COLOR
-DARK_OVERLAY = (0, 0, 0, 180)
-offset = 10
-cell_size = 40
-board_size = 10
-margin_top = 80
-margin_left_player = 70
-margin_left_bot = 530
-
-ship_images = {}
-
-try:
-    # Завантаження
-    ship1 = pygame.image.load("ship1.png").convert_alpha()
-    ship2 = pygame.image.load("ship2.png").convert_alpha()
-    ship3 = pygame.image.load("ship3.png").convert_alpha()
-    ship4 = pygame.image.load("ship4.png").convert_alpha()
-
-    # Масштабування під клітинки
-    ship_images[1] = pygame.transform.smoothscale(ship1, (cell_size, cell_size))
-    ship_images[2] = pygame.transform.smoothscale(ship2, (cell_size * 2, cell_size))
-    ship_images[3] = pygame.transform.smoothscale(ship3, (cell_size * 3, cell_size))
-    ship_images[4] = pygame.transform.smoothscale(ship4, (cell_size * 4, cell_size))
-
-    # Вертикальні версії
-    ship_images["v1"] = pygame.transform.rotate(ship_images[1], -90)
-    ship_images["v2"] = pygame.transform.rotate(ship_images[2], -90)
-    ship_images["v3"] = pygame.transform.rotate(ship_images[3], -90)
-    ship_images["v4"] = pygame.transform.rotate(ship_images[4], -90)
-
-    print("PNG кораблі завантажені!")
-except Exception as e:
-    print("Помилка завантаження картинок:", e)
-
-pygame.font.init()  # ДАРИНА, ЗВЕРНИ УВАГУ!!!!!!!!!!!
-try:
-    font = pygame.font.SysFont("Cy Grotesk Std Trial", 20)
-    font_large = pygame.font.SysFont("Cy Grotesk Std Trial", 28, bold=True)
-    font_huge = pygame.font.SysFont("Cy Grotesk Std Trial", 72, bold=True)
-except:
-    font = pygame.font.SysFont("arial", 20)
-    font_large = pygame.font.SysFont("arial", 28, bold=True)
-    font_huge = pygame.font.SysFont("arial", 72, bold=True)
-
-letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
 
 # Можливий вибір всіх кораблів
 # Створюємо кнопки-кораблі для інтерфейсу вибору
@@ -121,42 +60,6 @@ arsenal = [
 reset_game()
 
 
-# Функції малювання
-def draw_grid(screen, left_margin, letters_on_right=False):
-    for row in range(board_size):
-        for col in range(board_size):
-            rect = pygame.Rect(
-                left_margin + col * cell_size,
-                margin_top + row * cell_size,
-                cell_size,
-                cell_size
-            )
-            pygame.draw.rect(screen, GRID_COLOR, rect, 1, border_radius=6)
-
-    for i in range(board_size):
-        num_text = font.render(str(i + 1), True, TEXT_COLOR)
-        num_x = left_margin + i * cell_size + (cell_size // 2) - (num_text.get_width() // 2)
-        screen.blit(num_text, (num_x, margin_top - 30))
-
-        letter_text = font.render(letters[i], True, TEXT_COLOR)
-        letter_y = margin_top + i * cell_size + (cell_size // 2) - (letter_text.get_height() // 2)
-
-        if letters_on_right:
-            screen.blit(letter_text, (left_margin + board_size * cell_size + 10, letter_y))
-        else:
-            screen.blit(letter_text, (left_margin - 30, letter_y))
-
-
-def get_grid_coords(pos, left_margin):
-    x, y = pos
-    if left_margin <= x <= left_margin + board_size * cell_size:
-        if margin_top <= y <= margin_top + board_size * cell_size:
-            col = (x - left_margin) // cell_size
-            row = (y - margin_top) // cell_size
-            if 0 <= col < 10 and 0 <= row < 10:
-                return row, col
-    return None
-
 
 # Функція для автоматичного замальовування навколо потопленого корабля
 def mark_destroyed_perimeter(board, ship, bot_brain=None):
@@ -171,23 +74,6 @@ def mark_destroyed_perimeter(board, ship, bot_brain=None):
                             bot_brain.shoted.add((ny, nx))
                             if (ny, nx) in bot_brain.possible_opt:
                                 bot_brain.possible_opt.remove((ny, nx))
-
-
-def draw_end_screen(screen, win=True):
-    overlay = pygame.Surface((1000, 600), pygame.SRCALPHA)
-    overlay.fill(DARK_OVERLAY)
-    screen.blit(overlay, (0, 0))
-
-    title_text = "ПЕРЕМОГА!" if win else "ПОРАЗКА..."
-    color = (0, 255, 100) if win else RED
-
-    title_surf = font_huge.render(title_text, True, color)
-    title_rect = title_surf.get_rect(center=(500, 250))
-    screen.blit(title_surf, title_rect)
-
-    sub_text = font_large.render("Натисніть 'R' для нової гри або 'ESC' для виходу", True, WHITE)
-    sub_rect = sub_text.get_rect(center=(500, 350))
-    screen.blit(sub_text, sub_rect)
 
 
 # Головний цикл
