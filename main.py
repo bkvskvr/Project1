@@ -3,10 +3,11 @@ from Ship import Ship
 from Bot import Bot
 from Board import Board
 from Player import Player
+from audio import Audio
 
 
 def reset_game():
-    global player_board, bot_board, bot_brain, human_player, game_state  # ДОДАНО human_player
+    global player_board, bot_board, bot_brain, human_player, game_state, audio  # ДОДАНО human_player
     global current_orientation, game_message, selected_arsenal_idx, arsenal
     global explosions, destroyed_ships, destroyed_bot_ships  # Додано для анімацій
 
@@ -27,6 +28,11 @@ def reset_game():
     explosions = []  # список активних вибухів: {"x": px, "y": py, "frame": 0}
     destroyed_ships = []  # координати знищених кораблів гравця
     destroyed_bot_ships = []  # координати знищених кораблів бота
+
+    audio = Audio()
+    audio.load_sound("hit", "sounds/hit.wav")  # Додай свої файли
+    audio.load_sound("miss", "sounds/miss.wav")
+    audio.load_sound("sink", "sounds/sink.wav")
 
 assets.init_game()
 
@@ -121,13 +127,13 @@ while running:
                     coords_bot = get_grid_coords(mouse_pos, margin_left_bot)
                     if coords_bot:
                         r, c = coords_bot
-                        # Перевірка через матрицю поля
                         if bot_board.field[r][c] in [2, 3]:
                             game_message = "В цю клітинку вже вистрілено! Обери іншу."
                         else:
-                            # РОБИМО ПОСТРІЛ ЧЕРЕЗ КЛАС ГРАВЦЯ!
+                            # РОБИМО ПОСТРІЛ
                             result = human_player.make_shot(c, r)
                             if result is True:
+                                audio.play("hit")
                                 game_message = f"Влучив у {letters[r]}{c + 1}!"
 
                                 # Шукаємо, який саме корабель бота підбито
@@ -135,30 +141,27 @@ while running:
                                     if (c, r) in ship.coordinates:
                                         ship.hiten()
                                         if ship.defeated():
+                                            audio.play("sink")  # Додано звук потоплення
                                             game_message += " КОРАБЕЛЬ ЗНИЩЕНО!"
-                                            bot_board.mark_destroyed_perimeter(bot_board, ship)
+                                            bot_board.mark_destroyed_perimeter(ship)  # Виправлено виклик
                                             destroyed_bot_ships.append(list(ship.coordinates))
                                             for cx, cy in ship.coordinates:
                                                 explosions.append({"x": margin_left_bot + cx * cell_size,
-                                                                   "y": margin_top + cy * cell_size, "frame": 0})
-                                            # ПЕРЕВІРЯЄМО ПЕРЕМОГУ ЧЕРЕЗ КЛАС БОТА!
+                                                                    "y": margin_top + cy * cell_size, "frame": 0})
                                             if bot_brain.is_defeated():
                                                 game_state = "GAME_OVER"
                                         break
                             elif result is False:
+                                audio.play("miss")
                                 game_message = "Мимо! "
-
                                 # Хід бота
                                 bot_turn_active, bot_msg = bot_brain.make_turn(
                                     player_board, explosions, destroyed_ships,
                                     cell_size, margin_left_player, margin_top
                                 )
                                 game_message += bot_msg
-
-                                # ПЕРЕВІРЯЄМО ПОРАЗКУ ЧЕРЕЗ КЛАС ГРАВЦЯ!
                                 if human_player.is_defeated():
                                     game_state = "GAME_OVER"
-
 
 
     # Отрисовка
