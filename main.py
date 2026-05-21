@@ -1,11 +1,8 @@
-import pygame
-from settings import *
-import assets
 from ui import *
 from Ship import Ship
 from Bot import Bot
 from Board import Board
-from Player import Player  # ДОДАНО ІМПОРТ КЛАСУ ГРАВЦЯ!
+from Player import Player
 
 
 def reset_game():
@@ -58,22 +55,6 @@ arsenal = [
 ]
 
 reset_game()
-
-
-
-# Функція для автоматичного замальовування навколо потопленого корабля
-def mark_destroyed_perimeter(board, ship, bot_brain=None):
-    for sx, sy in ship.coordinates:
-        for dx in [-1, 0, 1]:
-            for dy in [-1, 0, 1]:
-                nx, ny = sx + dx, sy + dy
-                if 0 <= nx < 10 and 0 <= ny < 10:
-                    if board.field[ny][nx] == 0:
-                        board.field[ny][nx] = 2
-                        if bot_brain is not None:
-                            bot_brain.shoted.add((ny, nx))
-                            if (ny, nx) in bot_brain.possible_opt:
-                                bot_brain.possible_opt.remove((ny, nx))
 
 
 # Головний цикл
@@ -155,7 +136,7 @@ while running:
                                         ship.hiten()
                                         if ship.defeated():
                                             game_message += " КОРАБЕЛЬ ЗНИЩЕНО!"
-                                            mark_destroyed_perimeter(bot_board, ship)
+                                            bot_board.mark_destroyed_perimeter(bot_board, ship)
                                             destroyed_bot_ships.append(list(ship.coordinates))
                                             for cx, cy in ship.coordinates:
                                                 explosions.append({"x": margin_left_bot + cx * cell_size,
@@ -168,43 +149,17 @@ while running:
                                 game_message = "Мимо! "
 
                                 # Хід бота
-                                bot_turn = True
-                                bot_hit_flag = False
-                                while bot_turn and game_state == "PLAYING":
-                                    b_move = bot_brain.get_move()
-                                    if not b_move: break
-                                    b_row, b_col = b_move
+                                bot_turn_active, bot_msg = bot_brain.make_turn(
+                                    player_board, explosions, destroyed_ships,
+                                    cell_size, margin_left_player, margin_top
+                                )
+                                game_message += bot_msg
 
-                                    # БОТ РОБИТЬ ПОСТРІЛ ЧЕРЕЗ СВІЙ КЛАС!
-                                    b_res = bot_brain.make_shot(b_col, b_row)
-                                    if b_res is True:
-                                        bot_brain.register_hit(b_row, b_col)
-                                        bot_hit_flag = True
+                                # ПЕРЕВІРЯЄМО ПОРАЗКУ ЧЕРЕЗ КЛАС ГРАВЦЯ!
+                                if human_player.is_defeated():
+                                    game_state = "GAME_OVER"
 
-                                        # Шукаємо який корабель гравця підбито ботом
-                                        for ship in player_board.ships:
-                                            if (b_col, b_row) in ship.coordinates:
-                                                ship.hiten()
-                                                if ship.defeated():
-                                                    mark_destroyed_perimeter(player_board, ship, bot_brain)
-                                                    destroyed_ships.append(list(ship.coordinates))
-                                                    for cx, cy in ship.coordinates:
-                                                        explosions.append({"x": margin_left_player + cx * cell_size,
-                                                                           "y": margin_top + cy * cell_size,
-                                                                           "frame": 0})
-                                                    # ПЕРЕВІРЯЄМО ПОРАЗКУ ЧЕРЕЗ КЛАС ГРАВЦЯ!
-                                                    if human_player.is_defeated():
-                                                        game_state = "GAME_OVER"
-                                                        bot_turn = False
-                                                break
-                                    elif b_res is False:
-                                        bot_turn = False
 
-                                if game_state == "PLAYING":
-                                    if bot_hit_flag:
-                                        game_message += " Бот влучив у твій корабель! Твій хід."
-                                    else:
-                                        game_message += " Бот промахнувся. Твій хід."
 
     # Отрисовка
     screen.blit(background, (0, 0))
@@ -219,35 +174,7 @@ while running:
 
     # Малюємо кораблі гравця (сірі блоки або картинки)
     # Беремо кораблі з об'єкта дошки
-    for ship in player_board.ships:
-        min_x = min(c[0] for c in ship.coordinates)
-        min_y = min(c[1] for c in ship.coordinates)
-
-        is_horizontal = True
-        if len(ship.coordinates) > 1:
-            if ship.coordinates[0][0] == ship.coordinates[1][0]:
-                is_horizontal = False
-
-        length = len(ship.coordinates)
-        img_key = length if is_horizontal else f"v{length}"
-
-        px = margin_left_player + min_x * cell_size
-        py = margin_top + min_y * cell_size
-
-        if img_key in ship_images:
-            coords_set = [tuple(c) for c in ship.coordinates]
-            if coords_set not in [list(map(tuple, d)) for d in destroyed_ships]:
-                screen.blit(ship_images[img_key], (px, py))
-        else:
-            # Запасний варіант відмальовки, якщо картинок немає
-            for x, y in ship.coordinates:  # x - стовпець, y - рядок
-                pygame.draw.rect(screen, SHIP_COLOR,
-                                 (margin_left_player + x * cell_size + 2, margin_top + y * cell_size + 2, cell_size - 4,
-                                  cell_size - 4), border_radius=8)
-                pygame.draw.rect(screen, ACCENT,
-                                 (margin_left_player + x * cell_size + 2, margin_top + y * cell_size + 2, cell_size - 4,
-                                  cell_size - 4), 2, border_radius=8)
-
+    draw_ships(screen, player_board, ship_images, destroyed_ships, margin_left_player)
     # Відображення корабля пперед тим як розмістити його
     if game_state == "PLACING":
         arsenal_title = font_large.render("АРСЕНАЛ ФЛОТУ:", True, WHITE)
@@ -292,31 +219,13 @@ while running:
                         screen.blit(hover_surface,
                                     (margin_left_player + x * cell_size + 2, margin_top + y * cell_size + 2))
 
-    if game_state in ["PLAYING", "GAME_OVER"]:
-        # Малюємо постріли НАПРЯМУ З МАТРИЦІ ДОШКИ
-        for y in range(10):
-            for x in range(10):
-                # Малюємо постріли гравця по боту
-                if bot_board.field[y][x] == 2:  # Промах
-                    pygame.draw.circle(screen, WHITE,
-                                       (margin_left_bot + x * cell_size + 20, margin_top + y * cell_size + 20), 5)
-                elif bot_board.field[y][x] == 3:  # Влучання
-                    px, py = margin_left_bot + x * cell_size, margin_top + y * cell_size
-                    pygame.draw.line(screen, RED, (px + offset, py + offset),
-                                     (px + cell_size - offset, py + cell_size - offset), 3)
-                    pygame.draw.line(screen, RED, (px + cell_size - offset, py + offset),
-                                     (px + offset, py + cell_size - offset), 3)
+        if game_state in ["PLAYING", "GAME_OVER"]:
+            # Малюємо постріли для обох дощок через ui.py
+            draw_shots(screen, bot_board, margin_left_bot)
+            draw_shots(screen, player_board, margin_left_player)
 
-                # Малюємо постріли бота по гравцю
-                if player_board.field[y][x] == 2:  # Промах
-                    pygame.draw.circle(screen, WHITE,
-                                       (margin_left_player + x * cell_size + 20, margin_top + y * cell_size + 20), 5)
-                elif player_board.field[y][x] == 3:  # Влучання
-                    px, py = margin_left_player + x * cell_size, margin_top + y * cell_size
-                    pygame.draw.line(screen, RED, (px + offset, py + offset),
-                                     (px + cell_size - offset, py + cell_size - offset), 3)
-                    pygame.draw.line(screen, RED, (px + cell_size - offset, py + offset),
-                                     (px + offset, py + cell_size - offset), 3)
+
+
 
     # Відображення повідомлень внизу екрана
     pygame.draw.rect(screen, PANEL_COLOR, (180, 510, 640, 55), border_radius=15)

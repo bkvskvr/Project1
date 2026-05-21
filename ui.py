@@ -54,3 +54,50 @@ def draw_end_screen(screen, win=True):
     sub_text = assets.font_large.render("Натисніть 'R' для нової гри або 'ESC' для виходу", True, WHITE)
     sub_rect = sub_text.get_rect(center=(500, 350))
     screen.blit(sub_text, sub_rect)
+
+def draw_ships(screen, board, ship_images, destroyed_ships, margin_left):
+    # Малюємо кораблі (сірі блоки або картинки)
+    # Беремо кораблі з об'єкта дошки
+    for ship in board.ships:
+        min_x = min(c[0] for c in ship.coordinates)
+        min_y = min(c[1] for c in ship.coordinates)
+
+        is_horizontal = True
+        if len(ship.coordinates) > 1:
+            if ship.coordinates[0][0] == ship.coordinates[1][0]:
+                is_horizontal = False
+
+        length = len(ship.coordinates)
+        img_key = length if is_horizontal else f"v{length}"
+
+        px = margin_left + min_x * cell_size
+        py = margin_top + min_y * cell_size
+
+        if img_key in ship_images:
+            coords_set = [tuple(c) for c in ship.coordinates]
+            if coords_set not in [list(map(tuple, d)) for d in destroyed_ships]:
+                screen.blit(ship_images[img_key], (px, py))
+        else:
+            # Запасний варіант відмальовки, якщо картинок немає
+            for x, y in ship.coordinates:  # x - стовпець, y - рядок
+                pygame.draw.rect(screen, SHIP_COLOR,
+                                 (margin_left + x * cell_size + 2, margin_top + y * cell_size + 2, cell_size - 4,
+                                  cell_size - 4), border_radius=8)
+                pygame.draw.rect(screen, ACCENT,
+                                 (margin_left + x * cell_size + 2, margin_top + y * cell_size + 2, cell_size - 4,
+                                  cell_size - 4), 2, border_radius=8)
+
+
+def draw_shots(screen, board, margin_left):
+    # Малюємо постріли НАПРЯМУ З МАТРИЦІ ДОШКИ
+    for y in range(10):
+        for x in range(10):
+            if board.field[y][x] == 2:  # Промах
+                pygame.draw.circle(screen, WHITE,
+                                   (margin_left + x * cell_size + 20, margin_top + y * cell_size + 20), 5)
+            elif board.field[y][x] == 3:  # Влучання
+                px, py = margin_left + x * cell_size, margin_top + y * cell_size
+                pygame.draw.line(screen, RED, (px + offset, py + offset),
+                                 (px + cell_size - offset, py + cell_size - offset), 3)
+                pygame.draw.line(screen, RED, (px + cell_size - offset, py + offset),
+                                 (px + offset, py + cell_size - offset), 3)

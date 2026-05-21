@@ -48,3 +48,35 @@ class Bot(Player):
                 # і яких ще немає в черзі possible_opt
                 if (n_row, n_col) not in self.shoted and (n_row, n_col) not in self.possible_opt:
                     self.possible_opt.append((n_row, n_col))
+
+    def make_turn(self, player_board, explosions, destroyed_ships):
+        bot_turn = True
+        bot_hit_flag = False
+        message = ""
+
+        while bot_turn:
+            b_move = self.get_move()
+            if not b_move: break
+            b_row, b_col = b_move
+
+            b_res = self.make_shot(b_col, b_row)
+            if b_res is True:
+                self.register_hit(b_row, b_col)
+                bot_hit_flag = True
+
+                # Логіка знищення корабля
+                for ship in player_board.ships:
+                    if (b_col, b_row) in ship.coordinates:
+                        ship.hiten()
+                        if ship.defeated():
+                            player_board.mark_destroyed_perimeter(ship)
+                            destroyed_ships.append(list(ship.coordinates))
+                        break
+            else:
+                bot_turn = False
+
+        if bot_hit_flag:
+            message = " Бот влучив у твій корабель! Твій хід."
+        else:
+            message = " Бот промахнувся. Твій хід."
+        return message

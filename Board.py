@@ -90,3 +90,17 @@ class Board:
                 # add_ship сам перевірить, чи не виходить він за межі і чи не стоїть поруч з іншими
                 if self.add_ship(new_ship):
                     placed = True
+
+    # Функція для автоматичного замальовування навколо потопленого корабля
+    def mark_destroyed_perimeter(board, ship, bot_brain=None):
+        for sx, sy in ship.coordinates:
+            for dx in [-1, 0, 1]:
+                for dy in [-1, 0, 1]:
+                    nx, ny = sx + dx, sy + dy
+                    if 0 <= nx < 10 and 0 <= ny < 10:
+                        if board.field[ny][nx] == 0:
+                            board.field[ny][nx] = 2
+                            if bot_brain is not None:
+                                bot_brain.shoted.add((ny, nx))
+                                if (ny, nx) in bot_brain.possible_opt:
+                                    bot_brain.possible_opt.remove((ny, nx))
