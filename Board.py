@@ -13,10 +13,10 @@ class Board:
 
     def display(self):
         symbols = {
-            0: "🌊",
-            1: "🚢",
-            2: "⚪",
-            3: "💥"
+            0: "~",
+            1: "■",
+            2: "*",
+            3: "X"
         }
 
         for i, row in enumerate(self.field):
