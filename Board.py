@@ -26,7 +26,7 @@ class Board:
                 row_str += symbols[cell] + " "
             print(row_str)
 
-    def add_ship(self, ship): #перевірка, додавання кораблів
+    def add_ship(self, ship):
         if not self.placement(ship):
             return False
         self.ships.append(ship)
@@ -39,68 +39,67 @@ class Board:
 
     def placement(self, ship):
         for x, y in ship.coordinates:
-            if x < 0 or x >= 10 or y < 0 or y >= 10: #
+            if x < 0 or x >= 10 or y < 0 or y >= 10:
                 return False
 
-            for dy in [-1, 0, 1]: #
+            for dy in [-1, 0, 1]:
                 for dx in [-1, 0, 1]:
                     check_x = x + dx
                     check_y = y + dy
 
-                    if 0 <= check_x < 10 and 0 <= check_y < 10: #
-                        if self.field[check_y][check_x] == 1: #
+                    if 0 <= check_x < 10 and 0 <= check_y < 10:
+                        if self.field[check_y][check_x] == 1:
                             return False
         return True
 
 
     def shot(self, x, y): # вистріл опонента
         try:
-            if x < 0 or x >= 10 or y < 0 or y >= 10:  # Перевіряємо чи постріл в межах поля, якщо ні, то викликаємо власну помилку
+            if not (0 <= x < 10 and 0 <= y < 10):
                 raise ShotIndexError()
 
-            if self.field[y][x] == 1:  # якщо там корабель - 1, то замінюємо на влучено
+            if self.field[y][x] == 1:
                 self.field[y][x] = 3
-                return True  # Опонент попав отже має додатковий хід
-            elif self.field[y][x] == 0:
+                return True
+
+            if self.field[y][x] == 0:
                 self.field[y][x] = 2
                 return False
-            elif self.field[y][x] == 2 or self.field[y][x] == 3:
-                return None
+
+            return None
+
         except ShotIndexError:
             return None
 
+
     def auto_place_ships(self):
-        # Стандартний набір кораблів: один на 4, два на 3, три на 2, чотири на 1
         ship_lengths = [4, 3, 3, 2, 2, 2, 1, 1, 1, 1]
 
         for length in ship_lengths:
-            placed = False
-            while not placed:
-                # Випадково обираємо орієнтацію: h - горизонтальна, v - вертикальна
+            while True:
                 orientation = random.choice(['h', 'v'])
-                # Випадкові координати початку корабля
                 x = random.randint(0, 9)
                 y = random.randint(0, 9)
 
-                # Створюємо тимчасовий об'єкт корабля
                 new_ship = Ship(length, orientation)
-                new_ship.set_coordinate(x, y) # Генеруємо його координати
+                new_ship.set_coordinates(x, y)
 
-                # Намагаємося додати його на поле
-                # add_ship сам перевірить, чи не виходить він за межі і чи не стоїть поруч з іншими
                 if self.add_ship(new_ship):
-                    placed = True
+                    break
 
-    # Функція для автоматичного замальовування навколо потопленого корабля
-    def mark_destroyed_perimeter(board, ship, bot_brain=None):
+    def mark_destroyed_perimeter(self, ship, bot_brain=None):
         for sx, sy in ship.coordinates:
             for dx in [-1, 0, 1]:
                 for dy in [-1, 0, 1]:
                     nx, ny = sx + dx, sy + dy
-                    if 0 <= nx < 10 and 0 <= ny < 10:
-                        if board.field[ny][nx] == 0:
-                            board.field[ny][nx] = 2
-                            if bot_brain is not None:
-                                bot_brain.shoted.add((ny, nx))
-                                if (ny, nx) in bot_brain.possible_opt:
-                                    bot_brain.possible_opt.remove((ny, nx))
+                    if not (0 <= nx < 10 and 0 <= ny < 10):
+                        continue
+
+                    if self.field[ny][nx] != 0:
+                        continue
+
+                    self.field[ny][nx] = 2
+
+                    if bot_brain:
+                        bot_brain.shoted.add((ny, nx))
+                        bot_brain.possible_opt.discard((ny, nx))
