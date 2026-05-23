@@ -44,39 +44,29 @@ class Bot(Player):
 
             # Перевіряємо математичні межі поля (від 0 до 9 включно)
             if 0 <= n_row < 10 and 0 <= n_col < 10:
-                # Додаємо лише ті координати, куди ще не стріляли
-                # і яких ще немає в черзі possible_opt
-                if (n_row, n_col) not in self.shoted and (n_row, n_col) not in self.possible_opt:
-                    self.possible_opt.append((n_row, n_col))
+                if (n_row, n_col) not in self.shoted:
+                    self.possible_opt.add((n_row, n_col))
 
-    def make_turn(self, player_board, explosions, destroyed_ships):
-        bot_turn = True
+def make_turn(self, player_board, destroyed_ships):
         bot_hit_flag = False
-        message = ""
 
-        while bot_turn:
-            b_move = self.get_move()
-            if not b_move: break
-            b_row, b_col = b_move
-
+        while True:
+            b_row, b_col = self.get_move()
             b_res = self.make_shot(b_col, b_row)
-            if b_res is True:
+
+            if b_res:
                 self.register_hit(b_row, b_col)
                 bot_hit_flag = True
 
-                # Логіка знищення корабля
                 for ship in player_board.ships:
                     if (b_col, b_row) in ship.coordinates:
-                        ship.hiten()
+                        ship.hit()
+
                         if ship.defeated():
-                            player_board.mark_destroyed_perimeter(ship)
+                            player_board.mark_destroyed_perimeter(ship, bot_brain=self)
                             destroyed_ships.append(list(ship.coordinates))
                         break
             else:
-                bot_turn = False
+                break
 
-        if bot_hit_flag:
-            message = " Бот влучив у твій корабель! Твій хід."
-        else:
-            message = " Бот промахнувся. Твій хід."
-        return message
+        return " Бот влучив у твій корабель! Твій хід." if bot_hit_flag else " Бот промахнувся! Твій хід."

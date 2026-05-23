@@ -10,13 +10,14 @@ PANEL_COLOR = (15, 25, 40)
 GLOW = (0, 255, 255)
 WHITE = (255, 255, 255)
 GRAY = (127, 127, 127)
-RED = HIT_COLOR
 DARK_OVERLAY = (0, 0, 0, 180)
-offset = 10
-cell_size = 40
-board_size = 10
-margin_top = 80
-margin_left_player = 70
-margin_left_bot = 530
 
-letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+OFFSET = 10
+CELL_SIZE = 40
+BOARD_SIZE = 10
+MARGIN_TOP = 80
+MARGIN_LEFT_PLAYER = 70
+MARGIN_LEFT_BOT = 530
+
+
+LETTERS = list("ABCDEFGHIJ")
