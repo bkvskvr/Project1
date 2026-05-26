@@ -1,7 +1,7 @@
 class InvalidLengthShipError(Exception):
     pass
 
-shiplength = [1, 2, 3, 4]
+shiplength = (1, 2, 3, 4)
 
 class Ship:
     def __init__(self, length, orientation):
@@ -11,20 +11,19 @@ class Ship:
         self.length = length
         self.orientation = orientation
         self.lives = length
+        self.coordinates = []
 
-    def hiten(self):
+    def hit(self):
         if self.lives > 0:
             self.lives -= 1
 
     def defeated(self):
         return self.lives == 0
 
-    def set_coordinate(self, x, y):
+    def set_coordinates(self, x, y):
         self.coordinates = []
         for i in range(self.length):
-            if self.orientation == "h":  # горизонтально
-                # Додаємо координати по горизонталі (змінюється x)
+            if self.orientation == "h":
                 self.coordinates.append((x + i, y))
-            elif self.orientation == "v":  # вертикально
-                # Додаємо координати по вертикалі (змінюється y)
+            elif self.orientation == "v":
                 self.coordinates.append((x, y + i))
