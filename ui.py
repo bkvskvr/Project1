@@ -66,7 +66,10 @@ def draw_ships(screen, board, ship_images, margin_left):
         min_y = min(c[1] for c in ship.coordinates)
 
         # Використовуємо властивості об'єкта
-        img_key = ship.length if ship.orientation == "h" else f"v{ship.length}"
+        if ship.orientation in ("h", "right", "left"):
+            img_key = ship.length
+        else:
+            img_key = f"v{ship.length}"
 
         px = margin_left + min_x * CELL_SIZE
         py = MARGIN_TOP + min_y * CELL_SIZE
