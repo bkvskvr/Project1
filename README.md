@@ -41,3 +41,50 @@ To run the game, you will need Python and the `pygame` library.
 3. **Run the game: The main entry point is main.py.**
    ```bash
    python main.py
+📍 **Project structure**
+```mermaid
+classDiagram
+    class Ship {
+        +int length
+        +String orientation
+        +List coordinates
+        +int lives
+        +set_coordinates(x, y)
+        +hit()
+        +defeated() bool
+    }
+
+    class Board {
+        +List~List~int~~ field
+        +List~Ship~ ships
+        +add_ship(ship) bool
+        +shot(x, y) bool/None
+        +auto_place_ships()
+        +mark_destroyed_perimeter(ship)
+    }
+
+    class Player {
+        +String name
+        +Board board
+        +Board enemy_board
+        +make_shot(x, y) bool
+        +is_defeated() bool
+    }
+
+    class Bot {
+        +Set shoted
+        +List possible_opt
+        +get_move() tuple
+        +register_hit(row, col)
+        +make_turn(player_board, destroyed_ships) String
+    }
+
+    class Audio {
+        +load_sound(name, path)
+        +play(name)
+    }
+
+    %% Зв'язки між класами (Relationships)
+    Player <|-- Bot : Успадкування (Inheritance)
+    Player --> Board : Використовує (Association)
+    Board "1" *-- "*" Ship : Містить (Composition)
