@@ -36,6 +36,8 @@ To run the game, you will need Python and the `pygame` library.
    git clone https://github.com/bkvskvr/Project1.git
    cd Project1
 2. **Install dependencies: You will only need pygame.**
+   ```bash
    pip install pygame
 3. **Run the game: The main entry point is main.py.**
+   ```bash
    python main.py
