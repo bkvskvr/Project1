@@ -23,7 +23,12 @@ class Ship:
     def set_coordinates(self, x, y):
         self.coordinates = []
         for i in range(self.length):
-            if self.orientation == "h":
-                self.coordinates.append((x + i, y))
-            elif self.orientation == "v":
-                self.coordinates.append((x, y + i))
+            # Додаємо 4 напрямки для стрілочок
+            if self.orientation == "h" or self.orientation == "right":
+                self.coordinates.append((x + i, y))      # Вправо
+            elif self.orientation == "left":
+                self.coordinates.append((x - i, y))      # Вліво
+            elif self.orientation == "v" or self.orientation == "down":
+                self.coordinates.append((x, y + i))      # Вниз
+            elif self.orientation == "up":
+                self.coordinates.append((x, y - i))      # Вгору

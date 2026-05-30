@@ -76,8 +76,15 @@ while running:
             if event.key == pygame.K_r:
                 current_orientation = "v" if current_orientation == "h" else "h"
 
-            if game_state == "PLACING" and event.key in (pygame.K_RIGHT, pygame.K_LEFT):
-                current_orientation = "v" if current_orientation == "h" else "h"
+            if game_state == "PLACING":
+                if event.key == pygame.K_RIGHT:
+                    current_orientation = "right"
+                elif event.key == pygame.K_LEFT:
+                    current_orientation = "left"
+                elif event.key == pygame.K_DOWN:
+                    current_orientation = "down"
+                elif event.key == pygame.K_UP:
+                    current_orientation = "up"
 
             if game_state == "GAME_OVER":
                 if event.key == pygame.K_r:
@@ -192,18 +199,25 @@ while running:
             if hover_coords:
                 hr, hc = hover_coords
                 length = arsenal[selected_arsenal_idx]["length"]
-                img_key = length if current_orientation == "h" else f"v{length}"
+                # Спочатку створюємо корабель, щоб знати його точні координати
+                hover_ship = Ship(arsenal[selected_arsenal_idx]["length"], current_orientation)
+                hover_ship.set_coordinates(hc, hr)
+
+                # Визначаємо правильну картинку для 4 напрямків
+                img_key = length if current_orientation in ("h", "right", "left") else f"v{length}"
                 hover_img = ship_images.get(img_key)
 
                 if hover_img:
                     transparent_img = hover_img.copy()
                     transparent_img.set_alpha(150)
-                    hx = MARGIN_LEFT_PLAYER + hc * CELL_SIZE
-                    hy = MARGIN_TOP + hr * CELL_SIZE
-                    screen.blit(transparent_img, (hx, hy))
 
-                hover_ship = Ship(arsenal[selected_arsenal_idx]["length"], current_orientation)
-                hover_ship.set_coordinates(hc, hr)
+                    # Шукаємо правильний верхній лівий кут для картинки-тіні
+                    min_hx = min(c[0] for c in hover_ship.coordinates)
+                    min_hy = min(c[1] for c in hover_ship.coordinates)
+
+                    hx = MARGIN_LEFT_PLAYER + min_hx * CELL_SIZE
+                    hy = MARGIN_TOP + min_hy * CELL_SIZE
+                    screen.blit(transparent_img, (hx, hy))
 
                 for x, y in hover_ship.coordinates:
                     if 0 <= x <= 9 and 0 <= y <= 9:
