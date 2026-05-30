@@ -21,13 +21,16 @@ The project features a complete Player vs. Bot gameplay loop, interactive ship p
 
 * **Placement Phase:**
   * `Left Click` : Select a ship from the right panel and place it on your left grid.
-  * `Left/Right Arrows` or `R` : Rotate the selected ship (horizontal/vertical).
+  * `Arrow Keys` : Precisely control the ship's orientation:
+    * `Right` / `Left` : Horizontal orientations.
+    * `Up` / `Down` : Vertical orientations.
+  * `R` : Quick toggle between horizontal and vertical.
 * **Battle Phase:**
   * `Left Click` : Fire at the opponent's grid on the right side of the screen.
 * **Game Control:**
   * `R` : Restart the game (available on the Game Over screen).
   * `ESC` : Exit the game.
-
+    
 🛠 **Installation and Setup**
 
 To run the game, you will need Python and the `pygame` library.
@@ -41,7 +44,9 @@ To run the game, you will need Python and the `pygame` library.
 3. **Run the game: The main entry point is main.py.**
    ```bash
    python main.py
+   
 📍 **Project structure**
+
 ```mermaid
 classDiagram
     class Ship {
